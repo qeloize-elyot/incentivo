@@ -1,30 +1,120 @@
-// Banco de dados simulado localmente (Estado Global do App)
-let appState = {
-    saldoLuxo: 300.00,
-    ingressos: 3,
-    mascoteEmoji: '🐱'
+// Variáveis de Controle do Usuário Logado
+let currentUser = null;
+let tipoEdicaoAtual = ''; 
+
+// Estrutura Padrão para novos usuários cadastrados
+const defaultData = {
+    saldoObjetivos: 500.00,
+    saldoLuxo: 200.00,
+    ingressos: 1,
+    mascoteEmoji: '🐱',
+    statusMascote: '"Oie! Vamos economizar juntos hoje?"'
 };
 
-// URL do Filme guardado no Google Drive
-const urlFilme = "https://drive.google.com/file/d/1cpHkt1yJx9CK3zW4OVhI0WkrqAb-cNXB/view?usp=drivesdk";
+// Verificação de Sessão ao Iniciar a Página
+window.onload = function() {
+    const session = localStorage.getItem('activeUser');
+    if (session) {
+        currentUser = session;
+        loadUserData();
+        showApp();
+    }
+};
 
-// Função para navegar entre as abas do app de forma suave
+// --- SISTEMA DE LOGIN E CADASTRO REAL (Via LocalStorage) ---
+function efetuarLogin() {
+    const email = document.getElementById('login-email').value.trim().toLowerCase();
+    const senha = document.getElementById('login-senha').value.trim();
+
+    if (!email || !senha) {
+        alert("Preencha todos os campos para entrar! 💕");
+        return;
+    }
+
+    let userKey = `user_${btoa(email)}`;
+    let storedUser = localStorage.getItem(userKey);
+
+    if (!storedUser) {
+        // Se o usuário não existe, faz o cadastro automático com valores iniciais
+        localStorage.setItem(userKey, JSON.stringify(defaultData));
+        alert("Conta criada com sucesso com o saldo padrão! Bem-vindo(a) ✨");
+    }
+
+    localStorage.setItem('activeUser', userKey);
+    currentUser = userKey;
+    loadUserData();
+    showApp();
+}
+
+function efetuarLogout() {
+    localStorage.removeItem('activeUser');
+    currentUser = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('app-nav').style.display = 'none';
+    document.getElementById('app-container').style.display = 'none';
+}
+
+function showApp() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-nav').style.display = 'flex';
+    document.getElementById('app-container').style.display = 'block';
+    switchSection('dashboard');
+}
+
+// Carregar e Salvar dados do Usuário Atual
+function loadUserData() {
+    let data = JSON.parse(localStorage.getItem(currentUser));
+    document.getElementById('txt-objetivos').innerText = `R$ ${data.saldoObjetivos.toFixed(2)}`;
+    document.getElementById('txt-luxo').innerText = `R$ ${data.saldoLuxo.toFixed(2)}`;
+    document.getElementById('qtd-ingressos').innerText = data.ingressos;
+    document.getElementById('mascote').innerText = data.mascoteEmoji;
+    document.getElementById('mascote-status').innerText = data.statusMascote;
+}
+
+function saveUserData(data) {
+    localStorage.setItem(currentUser, JSON.stringify(data));
+    loadUserData();
+}
+
+// --- CONTROLE DE NAVEGAÇÃO ---
 function switchSection(sectionId) {
-    // Esconde todas as seções
-    document.querySelectorAll('.app-section').forEach(section => {
-        section.classList.remove('active');
-    });
-    // Remove o destaque de todos os botões da barra de navegação
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-
-    // Ativa a seção e o botão correspondente
+    document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(sectionId).classList.add('active');
     document.getElementById('btn-' + sectionId).classList.add('active');
 }
 
-// Função executada quando o usuário consulta a inteligência artificial
+// --- ALTERAÇÃO DE SALDOS (DIFERENCIAL PEDIDO) ---
+function abrirModalEdicao(tipo) {
+    tipoEdicaoAtual = tipo;
+    document.getElementById('modal-edit-title').innerText = tipo === 'objetivos' ? "Editar Meta dos Sonhos" : "Ajustar Limite de Luxo";
+    document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function fecharModalEdicao() {
+    document.getElementById('edit-modal').style.display = 'none';
+    document.getElementById('input-novo-valor').value = '';
+}
+
+function salvarNovoValor() {
+    const novoValor = parseFloat(document.getElementById('input-novo-valor').value);
+    if (isNaN(novoValor) || novoValor < 0) {
+        alert("Insira um valor numérico válido!");
+        return;
+    }
+
+    let data = JSON.parse(localStorage.getItem(currentUser));
+    if (tipoEdicaoAtual === 'objetivos') {
+        data.saldoObjetivos = novoValor;
+    } else {
+        data.saldoLuxo = novoValor;
+    }
+    
+    saveUserData(data);
+    fecharModalEdicao();
+}
+
+// --- LÓGICA RÍGIDA DA IA (Foco em Poupança) ---
 function enviarMensagemIA() {
     const inputItem = document.getElementById('input-item');
     const inputValor = document.getElementById('input-valor');
@@ -33,75 +123,95 @@ function enviarMensagemIA() {
     const item = inputItem.value.trim();
     const valor = parseFloat(inputValor.value);
 
-    // Validação simples dos campos digitados
-    if (!item || isNaN(valor) || valor <= 0) {
-        alert("Ops! Por favor, digite o nome do item e um valor válido. 🌸");
+    if (!item || isNaN(valor) || valor <= 0) return;
+
+    chatWindow.innerHTML += `<div class="msg message-user">Quero comprar um(a) ${item} por R$ ${valor.toFixed(2)}. Posso?</div>`;
+    inputItem.value = ""; inputValor.value = "";
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    setTimeout(() => {
+        let data = JSON.parse(localStorage.getItem(currentUser));
+        let resposta = "";
+
+        // Regra de Rigidez 1: Se ultrapassar o limite livre de luxo
+        if (valor > data.saldoLuxo) {
+            resposta = `🛑 <strong>NEGADO!</strong> Comprar esse(a) ${item} estoura completamente o seu Balde de Luxo. Fazer isso é sabotar seu próprio futuro e roubar dinheiro dos seus sonhos. Não compre!`;
+            data.mascoteEmoji = '😟';
+            data.statusMascote = `"Você quase fez uma besteira financeira impulsiva..."`;
+        } 
+        // Regra de Rigidez 2: Tem margem, mas a compra compromete uma fatia agressiva (mais de 40% do luxo do mês)
+        else if (valor > (data.saldoLuxo * 0.4)) {
+            resposta = `⚠️ <strong>CUIDADO!</strong> Embora você tenha R$ ${data.saldoLuxo.toFixed(2)} livre, esse item consome mais de 40% de todo o seu orçamento de vaidade do mês inteiro. Só porque você tem o dinheiro, não significa que deve torrá-lo. Recomendo guardar metade disso para seu balde de Objetivos Futuros e repensar em 3 dias.`;
+            data.mascoteEmoji = '🤔';
+            data.statusMascote = `"A IA te salvou de gastar quase metade do seu dinheiro livre!"`;
+        } 
+        // Regra de Rigidez 3: Compra pequena autorizada
+        else {
+            resposta = `✅ <strong>Aprovado com moderação.</strong> É um valor pequeno frente ao seu saldo. Mas lembre-se: pequenas compras acumuladas criam grandes rombos. Anote o gasto!`;
+            data.mascoteEmoji = '🐱';
+            data.statusMascote = `"Tudo sob controle por aqui!"`;
+        }
+
+        chatWindow.innerHTML += `<div class="msg message-ia">${resposta}</div>`;
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        saveUserData(data);
+    }, 800);
+}
+
+// --- AUDITORIA REAL DE EXTRATO (Simulação Inteligente de Análise) ---
+function processarExtrato() {
+    const fileInput = document.getElementById('file-extrato');
+    const resultadoBox = document.getElementById('extrato-resultado');
+
+    if (fileInput.files.length === 0) {
+        alert("Por favor, selecione um arquivo de extrato fictício para realizar a leitura!");
         return;
     }
 
-    // Renderiza o balão de mensagem do Usuário na tela
-    chatWindow.innerHTML += `
-        <div class="msg message-user">
-            Estou pensando em comprar um(a) <strong>${item}</strong> por <strong>R$ ${valor.toFixed(2)}</strong>. O que acha?
-        </div>
-    `;
+    resultadoBox.style.display = 'block';
+    resultadoBox.innerHTML = "<em>Analisando transações do extrato bancário... 🔍</em>";
 
-    // Reseta os campos de input
-    inputItem.value = "";
-    inputValor.value = "";
-    chatWindow.scrollTop = chatWindow.scrollHeight;
-
-    // Simula a resposta da IA inteligente após 1 segundo
     setTimeout(() => {
-        let respostaIA = "";
+        let data = JSON.parse(localStorage.getItem(currentUser));
         
-        if (valor > appState.saldoLuxo) {
-            // Cenário 1: Não há saldo suficiente no Balde de Luxo
-            respostaIA = `Humm... Analisei aqui e o valor de <strong>R$ ${valor.toFixed(2)}</strong> ultrapassa o que você tem disponível no seu balde de Luxo Livre agora. Se você comprar, vai acabar prejudicando seus objetivos maiores. Que tal segurar o impulso e esperar o mês que vem? 🐾`;
-            mudarHumorMascote('😟', '"Puxa, cuidado com os gastos extras!"');
+        // Simulação de verificação: 50% de chance de achar um gasto oculto não planejado
+        const mentiuNoGasto = Math.random() > 0.5;
+
+        if (mentiuNoGasto) {
+            resultadoBox.className = "resultado-box error-style";
+            resultadoBox.style.borderLeftColor = "#E53935";
+            resultadoBox.style.backgroundColor = "#FFEBEE";
+            resultadoBox.innerHTML = `❌ <strong>Auditoria Concluída:</strong> Detectamos transações na categoria 'Luxo' que não foram validadas no painel previamente. Você gastou escondido da IA! Como punição, você perdeu o bônus de consistência desta semana. Seja honesto com seu dinheiro!`;
+            data.mascoteEmoji = '😿';
+            data.statusMascote = `"Estou desapontado... encontramos gastos ocultos no seu extrato."`;
         } else {
-            // Cenário 2: Há saldo suficiente, a IA faz a reflexão consultiva
-            const sobra = appState.saldoLuxo - valor;
-            respostaIA = `Olha, você tem saldo disponível no balde de Luxo! Mas lembre-se: se comprar isso agora, restarão apenas <strong>R$ ${sobra.toFixed(2)}</strong> para todos os seus outros luxos do mês. Se esse item for mudar seu dia e te fizer muito feliz, vá em frente! Se for apenas um impulso passageiro, que tal guardar esse dinheiro para ganhar um ingresso de cinema? 🌸`;
-            mudarHumorMascote('🤔', '"Pense bem antes de usar seu saldo livre!"');
+            resultadoBox.className = "resultado-box success-style";
+            resultadoBox.style.borderLeftColor = "#2E7D32";
+            resultadoBox.style.backgroundColor = "#E8F5E9";
+            resultadoBox.innerHTML = `🎉 <strong>Extrato Validado!</strong> Meus parabéns! Suas movimentações reais batem perfeitamente com o combinado no app. Sua disciplina valeu a pena: <strong>+1 Ingresso de Ouro</strong> adicionado ao seu saldo!`;
+            data.ingressos += 1;
+            data.mascoteEmoji = '👑';
+            data.statusMascote = `"Incrível! Você provou no extrato que é mestre do dinheiro!"`;
         }
-
-        // Renderiza o balão de resposta da IA na tela
-        chatWindow.innerHTML += `<div class="msg message-ia">${respostaIA}</div>`;
-        chatWindow.scrollTop = chatWindow.scrollHeight;
-    }, 1000);
+        saveUserData(data);
+    }, 1500);
 }
 
-// Função utilitária para atualizar as reações e frases do mascote
-function mudarHumorMascote(emoji, statusTexto) {
-    document.getElementById('mascote').innerText = emoji;
-    document.getElementById('mascote-status').innerText = statusTexto;
-}
-
-// Lógica de liberação e desconto de ingressos da aba de Cinema
+// --- ABA DO CINEMA ---
 function abrirCinema() {
-    const modal = document.getElementById('video-modal');
-    const player = document.getElementById('main-video');
-
-    if (appState.ingressos >= 1) {
-        // Deduz um ingresso do saldo atual do usuário
-        appState.ingressos -= 1;
-        document.getElementById('qtd-ingressos').innerText = appState.ingressos;
-
-        // Abre a janela de cinema (Modal Overlay)
-        modal.style.display = 'flex';
-        
-        // Exibe o aviso clássico do Google Drive em consoles/logs
-        console.log("Carregando o link de Zootopia: " + urlFilme);
-        alert("Pipoca pronta! 🍿 Se por acaso o vídeo não carregar na tela, é porque o link direto do Drive bloqueou visualizações externas do navegador. No projeto definitivo com o Firebase Storage, isso rodará perfeitamente!");
+    let data = JSON.parse(localStorage.getItem(currentUser));
+    if (data.ingressos >= 1) {
+        data.ingressos -= 1;
+        saveUserData(data);
+        document.getElementById('video-modal').style.display = 'flex';
+        document.getElementById('main-video').src = "https://drive.google.com/file/d/1cpHkt1yJx9CK3zW4OVhI0WkrqAb-cNXB/view?usp=drivesdk";
     } else {
-        alert("Poxa... parece que seus ingressos acabaram! Controle mais alguns impulsos com a IA para coletar novos ingressos de ouro. 🎟️🌸");
+        alert("Sem ingressos! Passe pela auditoria de extrato sem fraudes para ganhar.");
     }
 }
 
-// Função para interromper o vídeo e fechar a tela de cinema
 function fecharCinema() {
-    const player = document.getElementById('main-video');
-    player.pause(); // Pausa a reprodução para não continuar saindo som ao fechar
+    const video = document.getElementById('main-video');
+    video.pause();
     document.getElementById('video-modal').style.display = 'none';
 }
