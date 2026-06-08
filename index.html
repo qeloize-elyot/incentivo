@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanças Fofas 🌸</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+    <div class="bolha bolha-1"></div>
+    <div class="bolha bolha-2"></div>
+
+    <nav class="nav-bar">
+        <div class="logo">🌸 Finanças Fofas</div>
+        <div class="nav-buttons">
+            <button onclick="switchSection('dashboard')" id="btn-dashboard" class="nav-btn active">
+                <i class="fa-solid fa-chart-pie"></i> Painel
+            </button>
+            <button onclick="switchSection('chat')" id="btn-chat" class="nav-btn">
+                <i class="fa-solid fa-comment-heart"></i> IA Amiga
+            </button>
+            <button onclick="switchSection('cinema')" id="btn-cinema" class="nav-btn">
+                <i class="fa-solid fa-popcorn"></i> Cinema
+            </button>
+        </div>
+    </nav>
+
+    <main class="main-container">
+        
+        <section id="dashboard" class="app-section active">
+            <div class="mascote-card">
+                <div class="mascote-avatar" id="mascote">🐱</div>
+                <div class="mascote-bubble">
+                    <p id="mascote-status">"Oie! Que bom te ver por aqui. Como estão seus planos hoje?"</p>
+                </div>
+            </div>
+
+            <div class="baldes-grid">
+                <div class="balde-card essencial">
+                    <div class="balde-icon"><i class="fa-solid fa-house-user"></i></div>
+                    <h3>Essencial</h3>
+                    <div class="valor-tag">R$ 1.500,00</div>
+                    <p>Contas fixas e sobrevivência</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 100%; background: #B2DFDB;"></div></div>
+                </div>
+
+                <div class="balde-card objetivos">
+                    <div class="balde-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                    <h3>Objetivos</h3>
+                    <div class="valor-tag">R$ 800,00</div>
+                    <p>Dinheiro para seus sonhos</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 45%; background: #FFF59D;"></div></div>
+                </div>
+
+                <div class="balde-card luxo">
+                    <div class="balde-icon"><i class="fa-solid fa-ice-cream"></i></div>
+                    <h3>Luxo Livre</h3>
+                    <div class="valor-tag dinâmico" id="saldo-luxo">R$ 300,00</div>
+                    <p>Seu dinheiro livre para gastar</p>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="barra-luxo" style="width: 100%; background: #FF4081;"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="chat" class="app-section">
+            <div class="section-header">
+                <h2>Conselheira Antimpulso</h2>
+                <p>Evite arrependimentos conversando com sua IA antes de comprar</p>
+            </div>
+            
+            <div class="chat-wrapper">
+                <div class="chat-messages" id="chat-window">
+                    <div class="msg message-ia">
+                        Olá! Vi que você está de olho em alguma coisa... Me conta o que é e qual o valor dela para analisarmos juntos! 🌸
+                    </div>
+                </div>
+                <div class="chat-controls">
+                    <input type="text" id="input-item" placeholder="Ex: Moletom fofo, Jogo novo...">
+                    <input type="number" id="input-valor" placeholder="R$ Valor">
+                    <button class="btn-send" onclick="enviarMensagemIA()">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="cinema" class="app-section">
+            <div class="section-header">
+                <h2>Cine-Clube Fofo</h2>
+                <p>Troque sua disciplina por entretenimento real de graça!</p>
+            </div>
+
+            <div class="ticket-container">
+                <div class="ticket-badge">
+                    <i class="fa-solid fa-ticket font-ticket"></i>
+                    <span><strong id="qtd-ingressos">3</strong> Ingressos Disponíveis</span>
+                </div>
+            </div>
+
+            <div class="cinema-catalog">
+                <div class="movie-card">
+                    <div class="movie-banner">🎬 Zootopia</div>
+                    <div class="movie-details">
+                        <h3>Zootopia: Essa Cidade é o Bicho</h3>
+                        <p class="movie-cost">Custo: 1 Ingressos de Ouro</p>
+                        <button class="btn-watch" onclick="abrirCinema()">
+                            <i class="fa-solid fa-play"></i> Desbloquear Filme
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="video-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="fecharCinema()"><i class="fa-solid fa-circle-xmark"></i> Fechar Tela</span>
+            <div class="video-wrapper">
+                <video id="main-video" controls>
+                    <source src="" type="video/mp4">
+                    Seu navegador não suporta a tag de vídeo.
+                </video>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
